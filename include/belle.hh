@@ -1,4 +1,13 @@
 /*
+
+belle-Cpp14: A fork of https://github.com/octobanana/belle that is C++ 14 compatible.
+
+The changes made to the original C++17 Belle header to make it compatible with C++14 can be seem at 
+https://github.com/raulcostajunior/belle-Cpp14/commit/2a26de6e6658c61240224fd6b4a658a43d9a63bb.
+
+The original header comments from Belle:
+
+
                                     88888888
                                   888888888888
                                  88888888888888
