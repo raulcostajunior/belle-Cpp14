@@ -103,6 +103,7 @@ SOFTWARE.
 #include <algorithm>
 #include <array>
 #include <boost/config.hpp>
+#include <boost/optional.hpp>
 #include <cctype>
 #include <chrono>
 #include <csignal>
@@ -117,7 +118,6 @@ SOFTWARE.
 #include <iterator>
 #include <limits>
 #include <memory>
-#include <optional>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -166,20 +166,27 @@ namespace OB::Belle {
         Ordered_Map() {}
 
         Ordered_Map(std::initializer_list<std::pair<K, V>> const& lst) {
-            for (auto const& [key, val] : lst) {
-                _it.emplace_back(_map.insert({key, val}).first);
+            for (auto const& p : lst) {
+                _it.emplace_back(_map.insert({p.first, p.second}).first);
             }
         }
 
         ~Ordered_Map() {}
 
         Ordered_Map& operator()(K const& k, V const& v) {
-            auto it = _map.insert_or_assign(k, v);
-
-            if (it.second) {
-                _it.emplace_back(it.first);
+            auto it = _map.find(k);
+            if (it == _map.end()) {
+                // Key is not yet in the map; insert it.
+                auto insert_res = _map.insert({k, v});
+                if (insert_res.second) {
+                    // Insertion was successful; add the element to the back
+                    // of the deque _it.
+                    _it.emplace_back(insert_res.first);
+                }
+            } else {
+                // Key is already in the map; just update the value.
+                it->second = v;
             }
-
             return *this;
         }
 
@@ -296,7 +303,7 @@ namespace OB::Belle {
 
         // prototypes
         inline std::string lowercase(std::string str);
-        inline std::optional<std::string> extension(std::string const& path);
+        inline boost::optional<std::string> extension(std::string const& path);
         inline std::vector<std::string> split(std::string const& str, std::string const& delim,
                                               std::size_t size = std::numeric_limits<std::size_t>::max());
 
@@ -318,7 +325,7 @@ namespace OB::Belle {
         }
 
         // find extension if present in a string path
-        inline std::optional<std::string> extension(std::string const& path) {
+        inline boost::optional<std::string> extension(std::string const& path) {
             if (path.empty() || path.size() < 2) {
                 return {};
             }
@@ -1269,15 +1276,8 @@ namespace OB::Belle {
 
             ~Http_Base() {}
 
-// TODO remove shim once visual studio supports generic lambdas
-#ifdef _MSC_VER
             template <typename Self, typename Res>
-            static void constexpr send(Self self, Res&& res)
-#else
-            // generic lambda for sending different types of responses
-            static auto constexpr send = [](auto self, auto&& res) -> void
-#endif // _MSC_VER
-            {
+            static void constexpr send(Self self, Res&& res) {
                 using item_type = std::remove_reference_t<decltype(res)>;
 
                 auto ptr = std::make_shared<item_type>(std::move(res));
@@ -1486,8 +1486,10 @@ namespace OB::Belle {
                 std::regex_constants::match_flag_type const rx_flgs{std::regex_constants::match_not_null};
 
                 // check for matching route
-                for (auto const& [regex, callback] : _attr->websocket_routes) {
-                    std::regex rx_str{regex, rx_opts};
+                for (auto const& rtPair : _attr->websocket_routes) {
+                    // rtPair.first = string for route regex
+                    // rtPair.second = websocket callback function structure
+                    std::regex rx_str{rtPair.first, rx_opts};
 
                     if (std::regex_match(path, rx_match, rx_str, rx_flgs)) {
                         // set the path
@@ -1499,7 +1501,8 @@ namespace OB::Belle {
                         _ctx.req.params_parse();
 
                         // create websocket
-                        std::make_shared<Websocket_Type>(derived().socket_move(), _attr, std::move(_ctx.req), callback)
+                        std::make_shared<Websocket_Type>(derived().socket_move(), _attr, std::move(_ctx.req),
+                                                         rtPair.second)
                               ->run();
 
                         return true;
@@ -2595,9 +2598,9 @@ namespace OB::Belle {
                 // set server name indication
                 // use SSL_ctrl instead of SSL_set_tlsext_host_name macro
                 // to avoid old style C cast to char*
-                // if (! SSL_set_tlsext_host_name(_socket.native_handle(), _attr->address.data()))
-                if (!SSL_ctrl(_socket.native_handle(), SSL_CTRL_SET_TLSEXT_HOSTNAME, TLSEXT_NAMETYPE_host_name,
-                              _attr->address.data())) {
+                if (!SSL_set_tlsext_host_name(_socket.native_handle(), _attr->address.data())) {
+                    // if (!SSL_ctrl(_socket.native_handle(), SSL_CTRL_SET_TLSEXT_HOSTNAME, TLSEXT_NAMETYPE_host_name,
+                    //   _attr->address.data())) {
                     error_code ec{static_cast<int>(ERR_get_error()), net::error::get_ssl_category()};
 
                     cancel_timer();
