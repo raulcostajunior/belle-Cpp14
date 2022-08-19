@@ -1,5 +1,7 @@
+> The changes made to the original C++17 Belle header to make it compatible with C++14 can be seem at https://github.com/raulcostajunior/belle-Cpp14/commit/2a26de6e6658c61240224fd6b4a658a43d9a63bb.
+
 # Belle
-An HTTP / Websocket library in C++17 using Boost.Beast and Boost.ASIO.
+An HTTP / Websocket library in C++17 (C++14 for this fork) using Boost.Beast and Boost.ASIO.
 
 Belle enables C++ programs to communicate asynchronously over HTTP and Websockets.
 It aims to have an intuitive API, reasonable defaults, and great performance.
