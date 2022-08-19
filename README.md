@@ -63,7 +63,7 @@ int main()
 ```
 
 ## About
-Belle is a single header C++17 library for working with HTTP and Websockets.
+Belle is a single header C++17 (C++14 for this fork) library for working with HTTP and Websockets.
 It utilizes the HTTP and Websocket functionalities of Boost.Beast,
 along with the asynchronous networking capabilities of Boost.ASIO.
 
@@ -136,7 +136,7 @@ $ cp ./include/belle.hh ./<project>
 * Windows (untested)
 
 ### Requirements
-* C++17 compiler
+* C++17 compiler (C++14 for this fork)
 * Boost >= 1.67
 * OpenSSL >= 1.1.0 (if SSL is enabled)
 * CMake >= 3.8 (to build examples)
